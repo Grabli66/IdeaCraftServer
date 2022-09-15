@@ -1,0 +1,11 @@
+{
+  "name": "API for Idea Craft",
+  "description": "API for Idea Craft",
+  "keywords": [
+    "api",
+    "go",
+    "idea"    
+  ],
+  "website": "https://github.com/Grabli66/IdeaCraftServer",
+  "repository": "https://github.com/Grabli66/IdeaCraftServer"
+}
