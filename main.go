@@ -6,14 +6,14 @@ import (
 	"strconv"
 	"time"
 
-	database "ideacraft/lib"
+	lib "ideacraft/lib"
 
 	fiber "github.com/gofiber/fiber/v2"
 	_ "github.com/heroku/x/hmetrics/onload"
 )
 
 func main() {
-	db := database.GetDatabase()
+	db := lib.GetDatabase()
 	db.Init()
 
 	port := os.Getenv("PORT")
@@ -50,7 +50,7 @@ func main() {
 			userId = &vuserId
 		}
 
-		ideas := db.GetIdeas(database.GetIdeasFilter{
+		ideas := db.GetIdeas(lib.GetIdeasFilter{
 			StartDate:  startDate,
 			Count:      count,
 			IsFavorite: isFavorite,
@@ -59,6 +59,36 @@ func main() {
 		return c.JSON(ideas)
 	})
 
+	// Создаёт новую идею
+	app.Post("/idea", func(c *fiber.Ctx) error {
+		type AddIdeaRequest struct {
+			Title       string `json:"title"`
+			Desctiption string `json:"desctiption"`
+			UserId      int    `json:"userid"`
+		}
+
+		req := AddIdeaRequest{}
+
+		if err := c.BodyParser(&req); err != nil {
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		lib.GetDatabase().AddIdea(lib.IdeaDB{})
+		return nil
+	})
+
+	// Редактирует идею
+	app.Put("/idea", func(c *fiber.Ctx) error {
+		lib.GetDatabase().EditIdea(lib.IdeaDB{})
+		return nil
+	})
+
+	// Удаляет идею
+	app.Delete("/idea", func(c *fiber.Ctx) error {
+		return nil
+	})
+
+	// Возвращает идею по идентификатору
 	app.Get("/idea/:id", func(c *fiber.Ctx) error {
 		idStr := c.Params("id")
 		id, err := strconv.Atoi(idStr)
@@ -68,6 +98,16 @@ func main() {
 
 		ideas := db.GetIdeaById(id)
 		return c.JSON(ideas)
+	})
+
+	// Возвращает список комментариевпо идентификатору идеи
+	app.Get("/comment/:ideaId", func(c *fiber.Ctx) error {
+		return nil
+	})
+
+	// Создаёт новый комментарий
+	app.Post("/comment", func(c *fiber.Ctx) error {
+		return nil
 	})
 
 	app.Listen(":" + port)
