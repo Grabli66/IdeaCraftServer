@@ -30,51 +30,96 @@ type IDatabase interface {
 
 	// Возвращает идеи
 	GetIdeas(filter GetIdeasFilter) []IdeaDB
+
+	// Добавляет комментарий
+	AddComment(comment CommentDB) CommentDB
+
+	// Возвращает комментарии для идеи
+	GetComments(ideaId int) []CommentDB
 }
 
 // Идея базы данных
 type IdeaDB struct {
-	Id          int       `json:"id"`
-	Title       string    `json:"title"`
-	Desctiption string    `json:"desctiption"`
-	DateTime    time.Time `json:"datetime"`
-	UserId      int       `json:"userid"`
+	// Идентификатор идеи
+	Id int `json:"id"`
+	// Заголовок
+	Title string `json:"title"`
+	// Описание идеи - основной текст
+	Desctiption string `json:"desctiption"`
+	// Дата создания идеи
+	DateTime time.Time `json:"datetime"`
+	// Идентификатор пользователя, который создал идею
+	UserId int `json:"userid"`
+}
+
+// Комментарий к идеи
+type CommentDB struct {
+	// Идентификатор комментария
+	Id int `json:"id"`
+	// Текст комментария
+	Text string `json:"text"`
+	// Идентификатор пользователя, который сделал комментарий
+	UserId int `json:"userid"`
+}
+
+// Контейнер для данных идеи
+type ideaDataContainer struct {
+	// Идея
+	idea IdeaDB
+	// Комментарии к идеи
+	comments map[int]CommentDB
 }
 
 type MockDatabase struct {
-	sync.RWMutex
-	ideas map[int]IdeaDB
+	ideasLock   sync.RWMutex
+	ideas       map[int]ideaDataContainer
+	commentLock sync.RWMutex
+	// Комментарии
+	comments map[int]CommentDB
 }
 
 var database IDatabase = &MockDatabase{}
 
+// Возвращает базу
+func GetDatabase() IDatabase {
+	return database
+}
+
 // Инициализирует
 func (m *MockDatabase) Init() {
-	m.ideas = map[int]IdeaDB{
+	m.ideas = map[int]ideaDataContainer{
 		0: {
-			Id:          0,
-			Title:       "Идея 1",
-			Desctiption: "Описание 1",
+			idea: IdeaDB{
+				Id:          0,
+				Title:       "Идея 1",
+				Desctiption: "Описание 1",
+			},
 		},
+
 		1: {
-			Id:          1,
-			Title:       "Идея 2",
-			Desctiption: "Описание 2",
+			idea: IdeaDB{
+				Id:          1,
+				Title:       "Идея 2",
+				Desctiption: "Описание 2",
+			},
 		},
+
 		2: {
-			Id:          2,
-			Title:       "Идея 3",
-			Desctiption: "Описание 3",
+			idea: IdeaDB{
+				Id:          2,
+				Title:       "Идея 3",
+				Desctiption: "Описание 3",
+			},
 		},
 	}
 }
 
 // Возвращает идею по идентификатору
 func (m *MockDatabase) GetIdeaById(id int) IdeaDB {
-	m.RLock()
-	defer m.RUnlock()
+	m.ideasLock.RLock()
+	defer m.ideasLock.RUnlock()
 
-	return m.ideas[id]
+	return m.ideas[id].idea
 }
 
 // Возвращает идеи
@@ -87,13 +132,13 @@ func (m *MockDatabase) GetIdeas(filter GetIdeasFilter) []IdeaDB {
 		}
 
 		if filter.IsFavorite && filter.UserId != nil {
-			if v.UserId == *filter.UserId {
-				values = append(values, v)
+			if v.idea.UserId == *filter.UserId {
+				values = append(values, v.idea)
 			}
 		} else if filter.UserId != nil {
-			values = append(values, v)
-		} else if v.DateTime.Before(filter.StartDate) {
-			values = append(values, v)
+			values = append(values, v.idea)
+		} else if v.idea.DateTime.Before(filter.StartDate) {
+			values = append(values, v.idea)
 		}
 	}
 
@@ -102,29 +147,38 @@ func (m *MockDatabase) GetIdeas(filter GetIdeasFilter) []IdeaDB {
 
 // Добавляет новую идею
 func (m *MockDatabase) AddIdea(idea IdeaDB) {
-	m.Lock()
-	defer m.Unlock()
+	m.ideasLock.Lock()
+	defer m.ideasLock.Unlock()
 
-	m.ideas[idea.Id] = idea
+	m.ideas[idea.Id] = ideaDataContainer{
+		idea: idea,
+	}
 }
 
 // Редактирует идею
 func (m *MockDatabase) EditIdea(idea IdeaDB) {
-	m.Lock()
-	defer m.Unlock()
+	m.ideasLock.Lock()
+	defer m.ideasLock.Unlock()
 
-	m.ideas[idea.Id] = idea
+	m.ideas[idea.Id] = ideaDataContainer{
+		idea: idea,
+	}
 }
 
 // Удаляет идею
 func (m *MockDatabase) DeleteIdea(id int) {
-	m.Lock()
-	defer m.Unlock()
+	m.ideasLock.Lock()
+	defer m.ideasLock.Unlock()
 
 	delete(m.ideas, id)
 }
 
-// Возвращает базу
-func GetDatabase() IDatabase {
-	return database
+// Добавляет комментарий
+func (m *MockDatabase) AddComment(comment CommentDB) CommentDB {
+	return comment
+}
+
+// Возвращает комментарии
+func (m *MockDatabase) GetComments(ideaId int) []CommentDB {
+	return nil
 }

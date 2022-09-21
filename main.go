@@ -17,7 +17,6 @@ func main() {
 	db.Init()
 
 	port := os.Getenv("PORT")
-	//port := "8080"
 
 	if port == "" {
 		log.Fatal("$PORT must be set")
